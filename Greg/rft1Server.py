@@ -1,7 +1,6 @@
 #   This program was made by Gregorio Loi on March 26, 2023
 #   Intended use was for Programming Assignment 2 Submission for Computer Networks
 
-
 import sys, os, time, select, socket
 
 #       HELPER FUNCTIONS
@@ -16,6 +15,35 @@ def getPortNumber():
             inputPort = False
     
     return inputPort
+
+def getWindowSize():
+    winSize = False
+    while winSize==False:
+        try:
+            winSize = int(input("Enter Window Size (N): #"))
+        except Exception as e:
+            #Error occured, display error and retry (While Loop)
+            print("Error Window Size (N) Input: "+str(e))
+            winSize = False
+    
+    return winSize
+
+#       HELPER FUNCTIONS
+def getProtocol():
+    inputProtocol = False
+    while inputProtocol==False:
+        try:
+            inputProtocol = int(input("Choose a protocol:\n1. [SnW]\n2. [GBN]\nEnter your choice (1-2): "))
+            if (inputProtocol != 1) and (inputProtocol != 2):
+                print("Invalid selection! Choose between 1 [SnW] or 2 [GBN].")
+                inputProtocol = False
+        except Exception as e:
+            #Error occured, display error and retry (While Loop)
+            print("Error Protocol Input: "+str(e))
+            inputProtocol = False
+    if inputProtocol == 1:
+        return "SnW"
+    return "GBN"
 
 def startServer(inputPort):
     # The proxy server is listening at inputPort 
@@ -46,6 +74,7 @@ def startServer(inputPort):
                     #Close connections one of the sockets disconnected
                     print("Connection closed, See you later!")
                     print(" ")
+                    print("*****************************************************************************") #NewLine
                     print('Listening for connection at Port '+str(inputPort)+'...')
                     print("*****************************************************************************") #NewLine
 
@@ -89,12 +118,23 @@ def startServer(inputPort):
 #       MAIN
 def main():
     #Get Input Port Number to listen on
-    inputPort = getPortNumber()
+    inputPort = getPortNumber() #Integer Port Number
+
+    #Get Input Protocol
+    inputProtocol = getProtocol() #String "SnW" or "GBN"
+
+    #If GBN, get Window Size!
+    if inputProtocol == "GBN":
+        windowSize = getWindowSize()
+
     print('Listening for connection at Port '+str(inputPort)+'...')
+    print('Using Protocol: '+str(inputProtocol))
+    if inputProtocol == "GBN":
+        print('Window Size (N) is: '+str(windowSize))
     print("*****************************************************************************") #NewLine
 
-    #Let's listen on it >:)
-    startServer(inputPort)
+    # #Let's listen on it >:)
+    # startServer(inputPort)
 
 
 
