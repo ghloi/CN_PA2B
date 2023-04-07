@@ -177,8 +177,8 @@ def send_snw(inputPort, clientIP, clientPort, timeout):
             if not ackReceived:
                 print("Acknowledgement not received - Retransmitting packet!")
             timerObj.stop() #For next time use
-
-    sock.sendto('EOF', clientAddress) #END OF FILE TRANSMISSION DONE
+    finalPacket=packet.make(seqNum, 'EOF'.encode())
+    sock.sendto(finalPacket, clientAddress) #END OF FILE TRANSMISSION DONE
     print('File Transfer complete! Closing socket.')
     sock.close()
             

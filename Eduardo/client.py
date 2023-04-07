@@ -9,6 +9,7 @@ class Client():
         self.recievedPackets=[]
     def recieve(self):
         if(self.protocol=='SnW'):
+            print(f'Receiving using {self.protocol}')
             self.recieve_goBackn()
         else:
             self.recieve_goBackn()
@@ -19,4 +20,4 @@ class Client():
     def save_file(self):
         with open(self.fileName, "w") as f:
             for packet in self.recievedPackets:
-                f.write(packet.decode())
+                f.write(packet)
