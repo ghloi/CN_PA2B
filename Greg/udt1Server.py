@@ -154,7 +154,7 @@ def send_snw(inputPort, clientIP, clientPort, timeout):
             dataPacket = packet.make(seqNum, dataChunk)
 
             #Send it
-            sock.send(dataPacket, sock, clientAddress)
+            udt.send(dataPacket, sock, clientAddress)
 
             #NOW WE TIMEOUT AND RECEIVE
             timerObj.start() #Start the timer
