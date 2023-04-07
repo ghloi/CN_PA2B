@@ -1,20 +1,36 @@
 #   This program was made by Gregorio Loi on March 26, 2023
 #   Intended use was for Programming Assignment 2 Submission for Computer Networks
 
-import sys, os, time, select, socket
+import sys, os, select, time, socket
+
+import udt, packet #HELPER MODULES
+from timer import Timer #Helper Timer Class
 
 #       HELPER FUNCTIONS
-def getPortNumber():
-    inputPort = False
-    while inputPort==False:
+def getInteger(displayMessage):
+    inputInt = False
+    while inputInt==False:
         try:
-            inputPort = int(input("Listen at Port: #"))
+            inputInt = int(input(displayMessage))
         except Exception as e:
             #Error occured, display error and retry (While Loop)
-            print("Error Port Input: "+str(e))
-            inputPort = False
+            print("Error Integer Input: "+str(e))
+            inputInt = False
     
-    return inputPort
+    return inputInt
+
+def getReceiverIP():
+    inputIP = False
+    while inputIP==False:
+        try:
+            inputIP = str(input("Provide Receiver IP: "))
+            #Verification optional
+        except Exception as e:
+            #Error occured, display error and retry (While Loop)
+            print("Error IP Input: "+str(e))
+            inputIP = False
+    
+    return inputIP
 
 def getWindowSize():
     winSize = False
@@ -113,28 +129,100 @@ def startServer(inputPort):
     tcpSerSock.close()
 
 
+def send_snw(inputPort, clientIP, clientPort, timeout):
+    #Important Variables
+    clientAddress = (clientIP, clientPort)
+    bufferSize = 999 #Save 1 byte for sequence number
+    seqNum = 0 #Start at 0
+    fileName = 'mickey.png'
+    DEFAULT_FILE = open(fileName, 'rb') #Default File hardcoded
+    fileSize = os.path.getsize(fileName)
+    timerObj = Timer(timeout)
+
+    #Create our UDP Socket first for Server to listen on
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind(('localhost', inputPort))
+
+    #Go through entire file in bufferSize increments
+    for i in range(0, fileSize, bufferSize):
+        #Get a chunk of data from file
+        dataChunk = DEFAULT_FILE.read(bufferSize)
+
+        ackReceived = False
+        while not ackReceived:
+            #Create a packet
+            dataPacket = packet.make(seqNum, dataChunk)
+
+            #Send it
+            udt.send(dataPacket, sock, clientAddress)
+
+            #NOW WE TIMEOUT AND RECEIVE
+            timerObj.start() #Start the timer
+            while not timerObj.timeout():
+                #Iteratively try to get an ACK signal
+                try:
+                    sock.settimeout(0.1) #VERY SHORT TIMEOUT
+                    rcvPacket = sock.recvfrom(bufferSize)
+                    rcvSeqNum, rcvData = packet.extract(rcvPacket)
+                    if rcvSeqNum == seqNum:
+                        #We received our seq num!! Yay
+                        ackReceived = True #To break while loop
+                        seqNum = 1 - seqNum #Sets 1 to 0, 0 to 1
+                        break
+                except Exception as e:
+                    #Ignore this branch of code, only used to catch socket timing out every 0.1 seconds
+                    pass
+            
+            #Now, check if Acknowledgement was received (Packet sent successfully)
+            if not ackReceived:
+                print("Acknowledgement not received - Retransmitting packet!")
+            timerObj.stop() #For next time use
+
+    sock.sendto('EOF', clientAddress) #END OF FILE TRANSMISSION DONE
+    print('File Transfer complete! Closing socket.')
+    sock.close()
+            
+
+
+
+
+
 
 
 #       MAIN
 def main():
-    #Get Input Port Number to listen on
-    inputPort = getPortNumber() #Integer Port Number
+    #Get Input Port Number for server listening on
+    inputPort = getInteger("Provide Port for incoming connections: #") #Integer Port Number
 
-    #Get Input Protocol
+    #Get Input IP Address to send file to
+    clientIP = getReceiverIP()
+    clientPort = getInteger("Provide Receiver Port: #") #Integer Port Number
+
+    #Get Input Protocol for sending file
     inputProtocol = getProtocol() #String "SnW" or "GBN"
 
     #If GBN, get Window Size!
     if inputProtocol == "GBN":
         windowSize = getWindowSize()
+    else:
+        timeout = getInteger("Enter timeout for packets in seconds: ")
 
-    print('Listening for connection at Port '+str(inputPort)+'...')
+    #Print Messages for Debug
+    print('Sending file to '+str(clientIP)+':'+str(clientPort)+'...')
     print('Using Protocol: '+str(inputProtocol))
     if inputProtocol == "GBN":
         print('Window Size (N) is: '+str(windowSize))
+    else:
+        print('Packet timeout in seconds is: '+str(timeout))
     print("*****************************************************************************") #NewLine
 
     # #Let's listen on it >:)
     # startServer(inputPort)
+    if inputProtocol == "GBN":
+        print("Sending with GBN...")
+    else:
+        print("Sending with SnW...")
+        send_snw(inputPort, clientIP, clientPort, timeout)
 
 
 
