@@ -5,6 +5,7 @@ import sys, os, select, time, socket
 
 import udt, packet #HELPER MODULES
 from timer import Timer #Helper Timer Class
+from collections import deque
 
 #       HELPER FUNCTIONS
 def getInteger(displayMessage):
@@ -61,73 +62,6 @@ def getProtocol():
         return "SnW"
     return "GBN"
 
-def startServer(inputPort):
-    # The proxy server is listening at inputPort 
-    tcpSerSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #AF_INET for IPv4 and SOCK_STREAM for TCP
-    tcpSerSock.setblocking(1) #Sets blocking to true (1), which means code will yield for sockets
-    tcpSerSock.bind(('localhost', inputPort))
-    tcpSerSock.listen(100) #Number inside listen() is maximum number of queued connections allowed
-
-    #List of Sockets to monitor
-    socketList = [tcpSerSock]
-
-    #Let's start
-    while socketList:
-        # Strat receiving data from the client
-        readable, writable, exceptional = select.select(socketList, [], [])
-
-        #GO THROUGH EACH READABLE FILE DESCRIPTOR
-        for sock in readable:
-            if sock is tcpSerSock:
-                #Accept a new connection and add that new connection to list of inputs
-                clientsock, addr = tcpSerSock.accept()
-                print('Connection accepted from '+str(addr[0]))
-                socketList.append(clientsock)
-            else:
-                data = sock.recv(1000) #TCP Payload
-                #Send 1000 and receive 1000
-                if not data:
-                    #Close connections one of the sockets disconnected
-                    print("Connection closed, See you later!")
-                    print(" ")
-                    print("*****************************************************************************") #NewLine
-                    print('Listening for connection at Port '+str(inputPort)+'...')
-                    print("*****************************************************************************") #NewLine
-
-                    #Current Socket Removal
-                    sock.close()
-                    if sock in socketList:
-                        socketList.remove(sock)
-                    continue #Stop here
-                
-                #File Name and File Path Variables
-                fileName = str(data)
-                filePath = "./Server/"+str(data)
-
-                #Check if file exists, otherwise send an error
-                print("Asking for file: "+fileName)
-                if not os.path.exists(filePath):
-                    print("File Not Found! Sending error ...")
-                    sock.send("Error404EOF") #File Not Found
-                    print("Error Message Sent!")
-                else:
-                    print("Sending the file ...")
-                    fileObj = open(filePath, 'rb')
-                    while True:
-                        fileChunk = fileObj.read(1000)
-                        if not fileChunk:
-                            break #End of File
-                        #Send the FileChunk
-                        sock.send(fileChunk)
-                    #Done transferring
-                    print("Transfer Complete!")
-                    sock.send("EOF")
-
-                
-                #sock.sendall("EOF") #Signal we're done sending data!
-
-    tcpSerSock.close()
-
 def send_snw(inputPort, clientIP, clientPort, timeout):
     #Important Variables
     clientAddress = (clientIP, clientPort)
@@ -161,7 +95,7 @@ def send_snw(inputPort, clientIP, clientPort, timeout):
                 #Iteratively try to get an ACK signal
                 try:
                     sock.settimeout(0.1) #VERY SHORT TIMEOUT
-                    rcvPacket, rcvAddress = sock.recvfrom(bufferSize)
+                    rcvPacket, rcvAddress = udt.recv(sock)
                     rcvSeqNum, rcvData = packet.extract(rcvPacket)
                     if rcvSeqNum == seqNum:
                         #We received our seq num!! Yay
@@ -176,13 +110,105 @@ def send_snw(inputPort, clientIP, clientPort, timeout):
             if not ackReceived:
                 print("Acknowledgement not received - Retransmitting packet!")
             timerObj.stop() #For next time use
-    finalPacket=packet.make(seqNum, 'EOF'.encode())
-    sock.sendto(finalPacket, clientAddress) #END OF FILE TRANSMISSION DONE
+
+    sock.sendto('EOF', clientAddress) #END OF FILE TRANSMISSION DONE
     print('File Transfer complete! Closing socket.')
     sock.close()
 
 def send_gbn(inputPort, clientIP, clientPort, windowSize):
     print("")
+    #Important Variables
+    clientAddress = (clientIP, clientPort)
+    bufferSize = 999 #Save 1 byte for sequence number
+    seqNum = 0 #Start at 0
+    fileName = 'mickey.png'
+    DEFAULT_FILE = open(fileName, 'rb') #Default File hardcoded
+    fileSize = os.path.getsize(fileName)
+    packets = [] #Array to hold all the packets
+    totalPackets = 0
+    timerObj = Timer(timeout)
+
+    #Create our UDP Socket first for Server to listen on
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind(('localhost', inputPort))
+
+    #Let's create packets from our file and append it to packets array
+    seqNum = 0 #Start at 0
+    for i in range(0, fileSize, bufferSize):
+        dataChunk = DEFAULT_FILE.read(bufferSize) #Chunk of data read
+        dataPacket = packet.make(seqNum, dataChunk) #Byte SeqNum + Bytes DataChunk
+        packets.append(dataPacket) #Add it to our packets array
+
+        #Sequence Number Assignment - Our general goal is 0, 1, 2, ..., N
+        seqNum += 1 #For next packet's sequence number
+        totalPackets += 1 #For keeping track of packets
+    
+    #Iterate
+    currentPacket = 0
+    window = deque() #Double ended queue for processing windows
+    unackedPkts = []
+
+    while len(window) < windowSize and currentPacket < totalPackets:
+            window.append(packets[currentPacket]) #Get next packet and add it to window
+            currentPacket += 1
+    for pkt in window:
+        udt.send(pkt, sock, clientAddress)
+    
+    while window:
+        #Repopulate our window to make sure its holding N packets when possible
+        while len(window) < windowSize and currentPacket < totalPackets:
+            newPkt = packets[currentPacket]
+            window.append(newPkt) #Get next packet and add it to window
+            currentPacket += 1
+            #SEND THE NEW ADDITION TO OUR WINDOW!
+            udt.send(newPkt, sock, clientAddress)
+
+        
+        #Check for ack on window[0]
+        timerObj.start() #Start the timer
+        ackReceived = False
+        while not timerObj.timeout():
+            #Iteratively try to get an ACK signal
+            try:
+                sock.settimeout(0.1) #VERY SHORT TIMEOUT
+                rcvPacket, rcvAddress = udt.recv(sock)
+                rcvSeqNum, rcvData = packet.extract(rcvPacket)
+                firstPacket = window[0]
+                currentSeqNum, currentData = packet.extract(firstPacket)
+                if rcvSeqNum == currentSeqNum:
+                    #We received our seq num!! Yay
+                    ackReceived = True #To break while loop
+                    break
+            except Exception as e:
+                #Ignore this branch of code, only used to catch socket timing out every 0.1 seconds
+                pass
+        
+        #Do certain actions depending on if you received an ack or not
+        if not ackReceived: #Not received-Retransmit entire window
+            for pkt in window:
+                udt.send(pkt, sock, clientAddress)
+        else: #Received - Pop window[0]
+            window.popleft() #Pops window[0]
+    
+    sock.sendto('EOF', clientAddress) #END OF FILE TRANSMISSION DONE
+    print('File Transfer complete! Closing socket.')
+    sock.close()
+        
+
+
+
+
+
+        
+
+        
+        
+
+    
+
+    
+
+    
 
 
 
@@ -198,26 +224,26 @@ def main():
     #Get Input Protocol for sending file
     inputProtocol = getProtocol() #String "SnW" or "GBN"
 
+    #Timeout/Lifetime of a Packet in seconds
+    timeout = getInteger("Enter timeout for packets in seconds: ")
+
     #If GBN, get Window Size!
     if inputProtocol == "GBN":
-        windowSize = getWindowSize()
-    else:
-        timeout = getInteger("Enter timeout for packets in seconds: ")
+        windowSize = getWindowSize()        
 
     #Print Messages for Debug
     print('Sending file to '+str(clientIP)+':'+str(clientPort)+'...')
     print('Using Protocol: '+str(inputProtocol))
     if inputProtocol == "GBN":
         print('Window Size (N) is: '+str(windowSize))
-    else:
-        print('Packet timeout in seconds is: '+str(timeout))
+    print('Packet timeout in seconds is: '+str(timeout))
     print("*****************************************************************************") #NewLine
 
     # #Let's listen on it >:)
     # startServer(inputPort)
     if inputProtocol == "GBN":
         print("Sending with GBN...")
-        send_gbn(inputPort, clientIP, clientPort, windowSize)
+        send_gbn(inputPort, clientIP, clientPort, windowSize, timeout)
     else:
         print("Sending with SnW...")
         send_snw(inputPort, clientIP, clientPort, timeout)
