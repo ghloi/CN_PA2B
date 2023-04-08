@@ -128,7 +128,6 @@ def startServer(inputPort):
 
     tcpSerSock.close()
 
-
 def send_snw(inputPort, clientIP, clientPort, timeout):
     #Important Variables
     clientAddress = (clientIP, clientPort)
@@ -148,11 +147,11 @@ def send_snw(inputPort, clientIP, clientPort, timeout):
         #Get a chunk of data from file
         dataChunk = DEFAULT_FILE.read(bufferSize)
 
+        #Create a packet
+        dataPacket = packet.make(seqNum, dataChunk)
+
         ackReceived = False
         while not ackReceived:
-            #Create a packet
-            dataPacket = packet.make(seqNum, dataChunk)
-
             #Send it
             udt.send(dataPacket, sock, clientAddress)
 
@@ -162,7 +161,7 @@ def send_snw(inputPort, clientIP, clientPort, timeout):
                 #Iteratively try to get an ACK signal
                 try:
                     sock.settimeout(0.1) #VERY SHORT TIMEOUT
-                    rcvPacket = sock.recvfrom(bufferSize)
+                    rcvPacket, rcvAddress = sock.recvfrom(bufferSize)
                     rcvSeqNum, rcvData = packet.extract(rcvPacket)
                     if rcvSeqNum == seqNum:
                         #We received our seq num!! Yay
@@ -181,11 +180,9 @@ def send_snw(inputPort, clientIP, clientPort, timeout):
     sock.sendto('EOF', clientAddress) #END OF FILE TRANSMISSION DONE
     print('File Transfer complete! Closing socket.')
     sock.close()
-            
 
-
-
-
+def send_gbn(inputPort, clientIP, clientPort, windowSize):
+    print("")
 
 
 
@@ -220,6 +217,7 @@ def main():
     # startServer(inputPort)
     if inputProtocol == "GBN":
         print("Sending with GBN...")
+        send_gbn(inputPort, clientIP, clientPort, windowSize)
     else:
         print("Sending with SnW...")
         send_snw(inputPort, clientIP, clientPort, timeout)
