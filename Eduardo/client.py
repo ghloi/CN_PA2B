@@ -5,15 +5,19 @@ class Client():
         self.serverPort=serverPort
         self.protocol=protocol
         self.fileName=fileName
-        self.goBackNReciever=Snw()
+        self.SnWReceiver=Snw()
         self.recievedPackets=[]
     def recieve(self):
-        if(self.protocol=='goBackN'):
+        if(self.protocol=='SnW'):
+            print(f'Receiving using {self.protocol}')
+            self.recieve_goBackn()
+        else:
             self.recieve_goBackn()
     def recieve_goBackn(self):
-        self.recievedPackets=self.goBackNReciever.begin(self.serverIp, self.serverPort)
-        pass
+        self.recievedPackets=self.SnWReceiver.begin(self.serverIp, self.serverPort)
+        self.save_file()
+        
     def save_file(self):
         with open(self.fileName, "w") as f:
             for packet in self.recievedPackets:
-                f.write(packet.decode())
+                f.write(packet)
