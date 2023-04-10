@@ -79,6 +79,7 @@ def send_snw(inputPort, clientIP, clientPort, timeout):
     sock.bind(('localhost', inputPort))
     reportDictionary["Protocol"].append('SnW')
     reportDictionary['Start Time'].append(reportStart)
+    cSocket, cAddress=sock.accept()
     #Go through entire file in bufferSize increments
     for i in range(0, fileSize, bufferSize):
         #Get a chunk of data from file
@@ -90,7 +91,7 @@ def send_snw(inputPort, clientIP, clientPort, timeout):
         ackReceived = False
         while not ackReceived:
             #Send it
-            udt.send(dataPacket, sock, clientAddress)
+            udt.send(dataPacket, sock, cAddress)
 
             #NOW WE TIMEOUT AND RECEIVE
             timerObj.start() #Start the timer
@@ -147,6 +148,7 @@ def send_gbn(inputPort, clientIP, clientPort, windowSize, timeout):
     reportDictionary['Start Time'].append(reportStart)
     #Let's create packets from our file and append it to packets array
     seqNum = 0 #Start at 0
+    cSocket, cAddress=sock.accept()
     for i in range(0, fileSize, bufferSize):
         dataChunk = DEFAULT_FILE.read(bufferSize) #Chunk of data read
         dataPacket = packet.make(seqNum, dataChunk) #Byte SeqNum + Bytes DataChunk
@@ -168,7 +170,7 @@ def send_gbn(inputPort, clientIP, clientPort, windowSize, timeout):
 
     #Then, we need to initially transmit every packet in our window
     for pkt in window:
-        udt.send(pkt, sock, clientAddress)
+        udt.send(pkt, sock, cAddress)
     
     while window:
         #Repopulate our window to make sure its holding N packets when possible
@@ -177,7 +179,7 @@ def send_gbn(inputPort, clientIP, clientPort, windowSize, timeout):
             window.append(newPkt) #Get next packet and add it to window
             currentPacket += 1
             #SEND THE NEW ADDITION TO OUR WINDOW!
-            udt.send(newPkt, sock, clientAddress)
+            udt.send(newPkt, sock, cAddress)
 
         
         #Check for ack on window[0]
@@ -203,7 +205,7 @@ def send_gbn(inputPort, clientIP, clientPort, windowSize, timeout):
         if not ackReceived: #Not received-Retransmit entire window
             for pkt in window:
                 retransmittedP+=1
-                udt.send(pkt, sock, clientAddress)
+                udt.send(pkt, sock, cAddress)
         else: #Received - Pop window[0]
             window.popleft() #Pops window[0]
     
