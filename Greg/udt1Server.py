@@ -115,7 +115,7 @@ def send_snw(inputPort, clientIP, clientPort, timeout):
     print('File Transfer complete! Closing socket.')
     sock.close()
 
-def send_gbn(inputPort, clientIP, clientPort, windowSize):
+def send_gbn(inputPort, clientIP, clientPort, windowSize, timeout):
     print("")
     #Important Variables
     clientAddress = (clientIP, clientPort)
