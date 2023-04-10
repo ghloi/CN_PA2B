@@ -75,8 +75,9 @@ def send_snw(inputPort, clientIP, clientPort, timeout):
     reportStart=time.time()
     retransmittedP=0
     #Create our UDP Socket first for Server to listen on
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.bind(('localhost', inputPort))
+    sock.listen(5)
     reportDictionary["Protocol"].append('SnW')
     reportDictionary['Start Time'].append(reportStart)
     cSocket, cAddress=sock.accept()
@@ -140,7 +141,7 @@ def send_gbn(inputPort, clientIP, clientPort, windowSize, timeout):
     timerObj = Timer(timeout)
 
     #Create our UDP Socket first for Server to listen on
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.bind(('localhost', inputPort))
     reportStart=time.time()
     retransmittedP=0
@@ -148,6 +149,7 @@ def send_gbn(inputPort, clientIP, clientPort, windowSize, timeout):
     reportDictionary['Start Time'].append(reportStart)
     #Let's create packets from our file and append it to packets array
     seqNum = 0 #Start at 0
+    sock.listen(5)
     cSocket, cAddress=sock.accept()
     for i in range(0, fileSize, bufferSize):
         dataChunk = DEFAULT_FILE.read(bufferSize) #Chunk of data read
