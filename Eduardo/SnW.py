@@ -2,7 +2,6 @@ import socket
 from packet import *
 class Snw():
     def __init__(self):
-        self.windowSize=4
         self.packetSize=1000
     def receive_packets(self,socket, address):
         expected_seq_num = 0

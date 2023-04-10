@@ -6,7 +6,7 @@ import sys, os, select, time, socket
 import udt, packet #HELPER MODULES
 from timer import Timer #Helper Timer Class
 from collections import deque
-
+import pandas as pd
 #       HELPER FUNCTIONS
 def getInteger(displayMessage):
     inputInt = False
@@ -64,6 +64,7 @@ def getProtocol():
 
 def send_snw(inputPort, clientIP, clientPort, timeout):
     #Important Variables
+    reportDictionary={'Protocol':[], 'Start Time':[], 'End Time':[], 'Lost Packets':[], 'Duration':[]}
     clientAddress = (clientIP, clientPort)
     bufferSize = 999 #Save 1 byte for sequence number
     seqNum = 0 #Start at 0
@@ -71,11 +72,13 @@ def send_snw(inputPort, clientIP, clientPort, timeout):
     DEFAULT_FILE = open(fileName, 'rb') #Default File hardcoded
     fileSize = os.path.getsize(fileName)
     timerObj = Timer(timeout)
-
+    reportStart=time.time()
+    retransmittedP=0
     #Create our UDP Socket first for Server to listen on
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind(('localhost', inputPort))
-
+    reportDictionary["Protocol"].append('SnW')
+    reportDictionary['Start Time'].append(reportStart)
     #Go through entire file in bufferSize increments
     for i in range(0, fileSize, bufferSize):
         #Get a chunk of data from file
@@ -109,15 +112,23 @@ def send_snw(inputPort, clientIP, clientPort, timeout):
             #Now, check if Acknowledgement was received (Packet sent successfully)
             if not ackReceived:
                 print("Acknowledgement not received - Retransmitting packet!")
+                retransmittedP+=1
             timerObj.stop() #For next time use
 
     sock.sendto('EOF', clientAddress) #END OF FILE TRANSMISSION DONE
     print('File Transfer complete! Closing socket.')
     sock.close()
+    reportEndTime=time.time()
+    reportDictionary['End Time'].append(reportEndTime)
+    reportDictionary['Duration'].append(reportEndTime-reportStart)
+    reportDictionary['Lost Packets'].append(retransmittedP)
+    df=pd.DataFrame.from_dict(reportDictionary)
+    df.to_csv('Report SnW.csv')
 
-def send_gbn(inputPort, clientIP, clientPort, windowSize):
+def send_gbn(inputPort, clientIP, clientPort, windowSize, timeout):
     print("")
     #Important Variables
+    reportDictionary={'Protocol':[], 'Start Time':[], 'End Time':[], 'Lost Packets':[], 'Duration':[]}
     clientAddress = (clientIP, clientPort)
     bufferSize = 999 #Save 1 byte for sequence number
     seqNum = 0 #Start at 0
@@ -131,7 +142,10 @@ def send_gbn(inputPort, clientIP, clientPort, windowSize):
     #Create our UDP Socket first for Server to listen on
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind(('localhost', inputPort))
-
+    reportStart=time.time()
+    retransmittedP=0
+    reportDictionary['Protocol'].append('GbN')
+    reportDictionary['Start Time'].append(reportStart)
     #Let's create packets from our file and append it to packets array
     seqNum = 0 #Start at 0
     for i in range(0, fileSize, bufferSize):
@@ -186,6 +200,7 @@ def send_gbn(inputPort, clientIP, clientPort, windowSize):
         #Do certain actions depending on if you received an ack or not
         if not ackReceived: #Not received-Retransmit entire window
             for pkt in window:
+                retransmittedP+=1
                 udt.send(pkt, sock, clientAddress)
         else: #Received - Pop window[0]
             window.popleft() #Pops window[0]
@@ -193,8 +208,12 @@ def send_gbn(inputPort, clientIP, clientPort, windowSize):
     sock.sendto('EOF', clientAddress) #END OF FILE TRANSMISSION DONE
     print('File Transfer complete! Closing socket.')
     sock.close()
-        
-
+    reportEndtime=time.time()
+    reportDictionary['End Time'].append(reportEndtime)
+    reportDictionary['Duration'].append(reportStart - reportEndtime)
+    reportDictionary['Lost Packets'].append(retransmittedP)
+    df=pd.DataFrame.from_dict(reportDictionary)
+    df.to_csv('GbN Report.csv')
 
 
 
