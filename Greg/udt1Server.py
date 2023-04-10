@@ -116,12 +116,11 @@ def send_snw(inputPort, clientIP, clientPort, timeout):
     sock.close()
 
 def send_gbn(inputPort, clientIP, clientPort, windowSize, timeout):
-    print("")
     #Important Variables
     clientAddress = (clientIP, clientPort)
     bufferSize = 999 #Save 1 byte for sequence number
     seqNum = 0 #Start at 0
-    fileName = 'mickey.png'
+    fileName = 'mickey.png' #File has to be in current directory
     DEFAULT_FILE = open(fileName, 'rb') #Default File hardcoded
     fileSize = os.path.getsize(fileName)
     packets = [] #Array to hold all the packets
@@ -148,9 +147,12 @@ def send_gbn(inputPort, clientIP, clientPort, windowSize, timeout):
     window = deque() #Double ended queue for processing windows
     unackedPkts = []
 
+    #Initially, we need to populate our window from empty to size N
     while len(window) < windowSize and currentPacket < totalPackets:
-            window.append(packets[currentPacket]) #Get next packet and add it to window
-            currentPacket += 1
+        window.append(packets[currentPacket]) #Get next packet and add it to window
+        currentPacket += 1
+
+    #Then, we need to initially transmit every packet in our window
     for pkt in window:
         udt.send(pkt, sock, clientAddress)
     
