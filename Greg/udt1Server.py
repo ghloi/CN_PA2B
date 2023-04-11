@@ -115,7 +115,7 @@ def send_snw(inputPort, clientIP, clientPort, timeout):
                 retransmittedP+=1
             timerObj.stop() #For next time use
 
-    sock.sendto('EOF', clientAddress) #END OF FILE TRANSMISSION DONE
+    sock.sendto('EOF'.encode(), clientAddress) #END OF FILE TRANSMISSION DONE
     print('File Transfer complete! Closing socket.')
     sock.close()
     reportEndTime=time.time()
@@ -209,7 +209,7 @@ def send_gbn(inputPort, clientIP, clientPort, windowSize, timeout):
         else: #Received - Pop window[0]
             window.popleft() #Pops window[0]
     
-    sock.sendto('EOF', clientAddress) #END OF FILE TRANSMISSION DONE
+    sock.sendto('EOF'.encode(), clientAddress) #END OF FILE TRANSMISSION DONE
     print('File Transfer complete! Closing socket.')
     sock.close()
     reportEndtime=time.time()
