@@ -114,7 +114,7 @@ def send_snw(inputPort, clientIP, clientPort, timeout):
                 print("Acknowledgement not received - Retransmitting packet!")
                 retransmittedP+=1
             timerObj.stop() #For next time use
-    newPacket=packet.make(-1, 'EOF'.encode())
+    newPacket=packet.make(-1, b'EOF')
     udt.send(newPacket, sock, clientAddress)
     sock.sendto('EOF'.encode(), clientAddress) #END OF FILE TRANSMISSION DONE
     print('File Transfer complete! Closing socket.')
@@ -209,7 +209,7 @@ def send_gbn(inputPort, clientIP, clientPort, windowSize, timeout):
                 udt.send(pkt, sock, clientAddress)
         else: #Received - Pop window[0]
             window.popleft() #Pops window[0]
-    newPacket=packet.make(-1, 'EOF'.encode())
+    newPacket=packet.make(-1, b'EOF')
     udt.send(newPacket, sock, clientAddress) #END OF FILE TRANSMISSION DONE
     print('File Transfer complete! Closing socket.')
     sock.close()

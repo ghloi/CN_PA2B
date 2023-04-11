@@ -15,8 +15,7 @@ class Snw():
                 packet, sender_address = socket.recvfrom(self.packetSize)
                 seq_num, data=extract(packet)
                 try:
-                    eof=data.decode()
-                    if(eof=='EOF'):
+                    if(data==b'EOF'):
                         break
                 except:
                     print('Not end of file')
