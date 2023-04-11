@@ -1,6 +1,6 @@
 # udt.py - Unreliable data transfer using UDP
 import random
-DROP_PROB = -1
+DROP_PROB = 2
 
 # Send a packet across the unreliable channel
 # Packet may be lost

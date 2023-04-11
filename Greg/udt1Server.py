@@ -68,7 +68,7 @@ def send_snw(inputPort, clientIP, clientPort, timeout):
     clientAddress = (clientIP, clientPort)
     bufferSize = 999 #Save 1 byte for sequence number
     seqNum = 0 #Start at 0
-    fileName = 'mickey.png'
+    fileName = 'random.mp4'
     DEFAULT_FILE = open(fileName, 'rb') #Default File hardcoded
     fileSize = os.path.getsize(fileName)
     timerObj = Timer(timeout)
@@ -115,8 +115,7 @@ def send_snw(inputPort, clientIP, clientPort, timeout):
                 retransmittedP+=1
             timerObj.stop() #For next time use
     newPacket=packet.make(-1, 'EOF'.encode('utf-8'))
-    udt.send(newPacket, sock, clientAddress)
-    sock.sendto('EOF'.encode(), clientAddress) #END OF FILE TRANSMISSION DONE
+    sock.sendto(newPacket, clientAddress)
     print('File Transfer complete! Closing socket.')
     sock.close()
     reportEndTime=time.time()
@@ -132,7 +131,7 @@ def send_gbn(inputPort, clientIP, clientPort, windowSize, timeout):
     clientAddress = (clientIP, clientPort)
     bufferSize = 999 #Save 1 byte for sequence number
     seqNum = 0 #Start at 0
-    fileName = 'mickey.png' #File has to be in current directory
+    fileName = 'random.mp4' #File has to be in current directory
     DEFAULT_FILE = open(fileName, 'rb') #Default File hardcoded
     fileSize = os.path.getsize(fileName)
     packets = [] #Array to hold all the packets
@@ -208,6 +207,14 @@ def send_gbn(inputPort, clientIP, clientPort, windowSize, timeout):
         timerObj.stop() #For reuse
         #Do certain actions depending on if you received an ack or not
         if not ackReceived: #Not received-Retransmit entire window
+            while(rcvSeqNum>currentSeqNum):
+                try:
+                    window.popleft()
+                    currentSeqNum+=1
+                except:
+                    window.append(packets[rcvSeqNum])
+                    break
+
             for pkt in window:
                 retransmittedP+=1
                 tempN, tempData=packet.extract(pkt)
@@ -216,7 +223,8 @@ def send_gbn(inputPort, clientIP, clientPort, windowSize, timeout):
         else: #Received - Pop window[0]
             window.popleft() #Pops window[0]
     newPacket=packet.make(-1, 'EOF'.encode('utf-8'))
-    udt.send(newPacket, sock, clientAddress) #END OF FILE TRANSMISSION DONE
+    sock.sendto(newPacket, clientAddress)
+     #END OF FILE TRANSMISSION DONE
     print('File Transfer complete! Closing socket.')
     sock.close()
     reportEndtime=time.time()
