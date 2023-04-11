@@ -114,7 +114,8 @@ def send_snw(inputPort, clientIP, clientPort, timeout):
                 print("Acknowledgement not received - Retransmitting packet!")
                 retransmittedP+=1
             timerObj.stop() #For next time use
-
+    newPacket=packet.make(-1, 'EOF'.encode())
+    udt.send(newPacket, sock, clientAddress)
     sock.sendto('EOF'.encode(), clientAddress) #END OF FILE TRANSMISSION DONE
     print('File Transfer complete! Closing socket.')
     sock.close()

@@ -19,6 +19,7 @@ class Snw():
                     if(eof=='EOF'):
                         break
                 except:
+                    print('Not end of file')
                     pass
                 if seq_num == expected_seq_num:
                     print(f'Received packet {seq_num}')
