@@ -19,10 +19,12 @@ class Client():
     def recieve_snw(self):
         self.recievedPackets=self.SnWReceiver.begin(self.serverIp, self.serverPort)
     def recieve_goBackN(self):
-        self.receievedPackets=self.GbNReceiver.begin(self.serverIp, self.serverPort)
+        self.recievedPackets=self.GbNReceiver.begin(self.serverIp, self.serverPort)
         
     def save_file(self):
+        print(f'Recieved {len(self.recievedPackets)} packets')
         with open(self.fileName, "wb") as f:
+            print('Writing file')
             i=0
             for packet in self.recievedPackets:
                 print(f'Writing packet {i}')
