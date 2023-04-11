@@ -1,5 +1,6 @@
 import socket
 from packet import *
+from udt import *
 class Snw():
     def __init__(self):
         self.packetSize=1000
@@ -22,24 +23,26 @@ class Snw():
                 if seq_num == expected_seq_num:
                     print(f'Received packet {seq_num}')
                     packet=make(seq_num, make_empty())
-                    socket.sendto(packet, address)
+                    send(packet, socket, sender_address)
                     received_packets.append(data)
                     expected_seq_num = ackDic[expected_seq_num]
+
                 else:
                     print(f'Received out-of-order packet {seq_num}')
+                    packet=make(ackDic[expected_seq_num], make_empty())
+                    send(packet, socket, sender_address)
             except socket.timeout:
                 print('Timeout waiting for packet')
                 break
-            if len(received_packets) == self.windowSize:
-                break
+            
         return received_packets
     def begin(self, ip, portNumber):
     # create a UDP socket and connect it to the server address
         print(f'Connecting to {ip} on port {portNumber}')
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         server_address = (ip, portNumber)
-        client_socket.connect(server_address)
-        print(f'Connection successful')
+        client_socket.bind(('localhost', 3560))
+        print(f'Socket has been binded.')
         # receive packets
         received_packets = self.receive_packets(client_socket, server_address)
         

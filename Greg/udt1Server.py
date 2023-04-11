@@ -75,12 +75,10 @@ def send_snw(inputPort, clientIP, clientPort, timeout):
     reportStart=time.time()
     retransmittedP=0
     #Create our UDP Socket first for Server to listen on
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind(('localhost', inputPort))
-    sock.listen(5)
     reportDictionary["Protocol"].append('SnW')
     reportDictionary['Start Time'].append(reportStart)
-    cSocket, cAddress=sock.accept()
     #Go through entire file in bufferSize increments
     for i in range(0, fileSize, bufferSize):
         #Get a chunk of data from file
@@ -92,7 +90,7 @@ def send_snw(inputPort, clientIP, clientPort, timeout):
         ackReceived = False
         while not ackReceived:
             #Send it
-            udt.send(dataPacket, sock, cAddress)
+            udt.send(dataPacket, sock, clientAddress)
 
             #NOW WE TIMEOUT AND RECEIVE
             timerObj.start() #Start the timer
@@ -141,7 +139,7 @@ def send_gbn(inputPort, clientIP, clientPort, windowSize, timeout):
     timerObj = Timer(timeout)
 
     #Create our UDP Socket first for Server to listen on
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind(('localhost', inputPort))
     reportStart=time.time()
     retransmittedP=0
@@ -172,7 +170,7 @@ def send_gbn(inputPort, clientIP, clientPort, windowSize, timeout):
 
     #Then, we need to initially transmit every packet in our window
     for pkt in window:
-        udt.send(pkt, sock, cAddress)
+        udt.send(pkt, sock, clientAddress)
     
     while window:
         #Repopulate our window to make sure its holding N packets when possible
@@ -181,7 +179,7 @@ def send_gbn(inputPort, clientIP, clientPort, windowSize, timeout):
             window.append(newPkt) #Get next packet and add it to window
             currentPacket += 1
             #SEND THE NEW ADDITION TO OUR WINDOW!
-            udt.send(newPkt, sock, cAddress)
+            udt.send(newPkt, sock, clientAddress)
 
         
         #Check for ack on window[0]
@@ -207,7 +205,7 @@ def send_gbn(inputPort, clientIP, clientPort, windowSize, timeout):
         if not ackReceived: #Not received-Retransmit entire window
             for pkt in window:
                 retransmittedP+=1
-                udt.send(pkt, sock, cAddress)
+                udt.send(pkt, sock, clientAddress)
         else: #Received - Pop window[0]
             window.popleft() #Pops window[0]
     

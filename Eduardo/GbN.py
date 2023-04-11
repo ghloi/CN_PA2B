@@ -1,5 +1,6 @@
 import socket
 from packet import *
+from udt import *
 class GbN():
     def __init__(self):
         self.packetSize=1000
@@ -8,6 +9,7 @@ class GbN():
     def receive_packets(self,socket, address):
         expected_seq_num = 0
         received_packets = []
+        recieved_sequence=[]
         print(f'Starting protocol')
         while True:
             try:
@@ -23,11 +25,18 @@ class GbN():
                 if seq_num == expected_seq_num:
                     print(f'Received packet {seq_num}')
                     packet=make(seq_num, make_empty())
-                    socket.sendto(packet, address)
+                    send(packet, socket, sender_address)
                     received_packets.append(data)
                     expected_seq_num +=1
+                    recieved_sequence.append(seq_num)
                 else:
                     print(f'Received out-of-order packet {seq_num}')
+                    try:
+                        previous_seq=recieved_sequence[-1]
+                    except:
+                        previous_seq=0
+                    packet=make(previous_seq, make_empty())
+                    send(packet, socket, sender_address)
             except socket.timeout:
                 print('Timeout waiting for packet')
                 break
@@ -38,8 +47,8 @@ class GbN():
         print(f'Connecting to {ip} on port {portNumber}')
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         server_address = (ip, portNumber)
-        client_socket.connect(server_address)
-        print(f'Connection successful')
+        client_socket.bind(('localhost',3560))
+        print(f'Socket has been binded')
         # receive packets
         received_packets = self.receive_packets(client_socket, server_address)
         
