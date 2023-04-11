@@ -30,11 +30,12 @@ class GbN():
                     expected_seq_num +=1
                     recieved_sequence.append(seq_num)
                 else:
-                    print(f'Received out-of-order packet {seq_num}')
+                    print(f'Received out-of-order packet {seq_num}. Expecting {expected_seq_num}')
                     try:
                         previous_seq=recieved_sequence[-1]
                     except:
-                        previous_seq=0
+                        previous_seq=-1
+                    print(f'Sending back {previous_seq}')
                     packet=make(previous_seq, make_empty())
                     send(packet, socket, sender_address)
             except socket.timeout:

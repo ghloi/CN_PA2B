@@ -199,6 +199,7 @@ def send_gbn(inputPort, clientIP, clientPort, windowSize, timeout):
                 currentSeqNum, currentData = packet.extract(firstPacket)
                 if rcvSeqNum == currentSeqNum:
                     #We received our seq num!! Yay
+                    print(f'Acknowledged Sequence #{rcvSeqNum}')
                     ackReceived = True #To break while loop
                     break
             except Exception as e:

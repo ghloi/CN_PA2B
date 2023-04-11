@@ -23,5 +23,8 @@ class Client():
         
     def save_file(self):
         with open(self.fileName, "wb") as f:
+            i=0
             for packet in self.recievedPackets:
+                print(f'Writing packet {i}')
+                i+=1
                 f.write(packet)
