@@ -15,10 +15,11 @@ class Snw():
                 packet, sender_address = socket.recvfrom(self.packetSize)
                 seq_num, data=extract(packet)
                 try:
-                    if(data==b'EOF'):
+                    eof=data.decode('utf-8')
+                    if(eof=='EOF'):
                         break
-                except:
-                    print('Not end of file')
+                except Exception as e:
+                    print('Not end of file: '+str(e))
                     pass
                 if seq_num == expected_seq_num:
                     print(f'Received packet {seq_num}')

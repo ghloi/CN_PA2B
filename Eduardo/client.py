@@ -24,4 +24,4 @@ class Client():
     def save_file(self):
         with open(self.fileName, "w") as f:
             for packet in self.recievedPackets:
-                f.write(packet)
+                f.write(packet.decode())
