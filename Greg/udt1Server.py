@@ -204,7 +204,7 @@ def send_gbn(inputPort, clientIP, clientPort, windowSize, timeout):
             except Exception as e:
                 #Ignore this branch of code, only used to catch socket timing out every 0.1 seconds
                 pass
-        
+        timerObj.stop() #For reuse
         #Do certain actions depending on if you received an ack or not
         if not ackReceived: #Not received-Retransmit entire window
             for pkt in window:
