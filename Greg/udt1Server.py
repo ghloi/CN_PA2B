@@ -209,8 +209,8 @@ def send_gbn(inputPort, clientIP, clientPort, windowSize, timeout):
                 udt.send(pkt, sock, clientAddress)
         else: #Received - Pop window[0]
             window.popleft() #Pops window[0]
-    
-    sock.sendto('EOF'.encode(), clientAddress) #END OF FILE TRANSMISSION DONE
+    newPacket=packet.make(-1, 'EOF'.encode())
+    udt.send(newPacket, sock, clientAddress) #END OF FILE TRANSMISSION DONE
     print('File Transfer complete! Closing socket.')
     sock.close()
     reportEndtime=time.time()
