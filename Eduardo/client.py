@@ -22,6 +22,6 @@ class Client():
         self.receievedPackets=self.GbNReceiver.begin(self.serverIp, self.serverPort)
         
     def save_file(self):
-        with open(self.fileName, "w") as f:
+        with open(self.fileName, "wb") as f:
             for packet in self.recievedPackets:
-                f.write(packet.decode())
+                f.write(packet)

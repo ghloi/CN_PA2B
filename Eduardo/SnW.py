@@ -12,7 +12,7 @@ class Snw():
         while True:
             try:
                 print(f'Waiting for packet')
-                packet, sender_address = socket.recvfrom(self.packetSize)
+                packet, sender_address = recv(socket)
                 seq_num, data=extract(packet)
                 try:
                     eof=data.decode('utf-8')
