@@ -148,8 +148,7 @@ def send_gbn(inputPort, clientIP, clientPort, windowSize, timeout):
     reportDictionary['Start Time'].append(reportStart)
     #Let's create packets from our file and append it to packets array
     seqNum = 0 #Start at 0
-    sock.listen(5)
-    cSocket, cAddress=sock.accept()
+    
     for i in range(0, fileSize, bufferSize):
         dataChunk = DEFAULT_FILE.read(bufferSize) #Chunk of data read
         dataPacket = packet.make(seqNum, dataChunk) #Byte SeqNum + Bytes DataChunk
@@ -171,6 +170,8 @@ def send_gbn(inputPort, clientIP, clientPort, windowSize, timeout):
 
     #Then, we need to initially transmit every packet in our window
     for pkt in window:
+        tempN, tempData=packet.extract(pkt)
+        print(f'Sending packet Sequence #{tempN}')
         udt.send(pkt, sock, clientAddress)
     
     while window:
@@ -180,6 +181,8 @@ def send_gbn(inputPort, clientIP, clientPort, windowSize, timeout):
             window.append(newPkt) #Get next packet and add it to window
             currentPacket += 1
             #SEND THE NEW ADDITION TO OUR WINDOW!
+            tempN, tempData=packet.extract(newPkt)
+            print(f'Sending packet Sequence #{tempN}')
             udt.send(newPkt, sock, clientAddress)
 
         
@@ -206,10 +209,12 @@ def send_gbn(inputPort, clientIP, clientPort, windowSize, timeout):
         if not ackReceived: #Not received-Retransmit entire window
             for pkt in window:
                 retransmittedP+=1
+                tempN, tempData=packet.extract(pkt)
+                print(f'Sending packet Sequence #{tempN}')
                 udt.send(pkt, sock, clientAddress)
         else: #Received - Pop window[0]
             window.popleft() #Pops window[0]
-    newPacket=packet.make(-1, b'EOF')
+    newPacket=packet.make(-1, 'EOF'.encode('utf-8'))
     udt.send(newPacket, sock, clientAddress) #END OF FILE TRANSMISSION DONE
     print('File Transfer complete! Closing socket.')
     sock.close()
