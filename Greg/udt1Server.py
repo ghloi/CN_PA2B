@@ -68,7 +68,7 @@ def send_snw(inputPort, clientIP, clientPort, timeout):
     clientAddress = (clientIP, clientPort)
     bufferSize = 999 #Save 1 byte for sequence number
     seqNum = 0 #Start at 0
-    fileName = 'random.mp4'
+    fileName = 'assign1.pdf'
     DEFAULT_FILE = open(fileName, 'rb') #Default File hardcoded
     fileSize = os.path.getsize(fileName)
     timerObj = Timer(timeout)
@@ -131,7 +131,7 @@ def send_gbn(inputPort, clientIP, clientPort, windowSize, timeout):
     clientAddress = (clientIP, clientPort)
     bufferSize = 999 #Save 1 byte for sequence number
     seqNum = 0 #Start at 0
-    fileName = 'random.mp4' #File has to be in current directory
+    fileName = 'assign1.pdf' #File has to be in current directory
     DEFAULT_FILE = open(fileName, 'rb') #Default File hardcoded
     fileSize = os.path.getsize(fileName)
     packets = [] #Array to hold all the packets

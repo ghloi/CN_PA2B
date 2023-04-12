@@ -9,7 +9,7 @@ class Client():
         self.SnWReceiver=Snw()
         self.GbNReceiver=GbN()
         self.recievedPackets=[]
-    def recieve(self):
+    def recieve(self): #Will start receiving packets depending on protocol selected
         if(self.protocol=='SnW'):
             print(f'Receiving using {self.protocol}')
             self.recieve_snw()
@@ -17,11 +17,11 @@ class Client():
             self.recieve_goBackN()
         self.save_file()
     def recieve_snw(self):
-        self.recievedPackets=self.SnWReceiver.begin(self.serverIp, self.serverPort)
+        self.recievedPackets=self.SnWReceiver.begin(self.serverIp, self.serverPort) #SnW protocol
     def recieve_goBackN(self):
-        self.recievedPackets=self.GbNReceiver.begin(self.serverIp, self.serverPort)
+        self.recievedPackets=self.GbNReceiver.begin(self.serverIp, self.serverPort) #GnB protocol
         
-    def save_file(self):
+    def save_file(self): #Method will take packets and save file. 
         print(f'Recieved {len(self.recievedPackets)} packets')
         with open(self.fileName, "wb") as f:
             print('Writing file')
